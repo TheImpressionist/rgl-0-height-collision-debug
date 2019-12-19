@@ -2,6 +2,7 @@
   "name": "rgl-hidden-elements",
   "version": "0.1.0",
   "private": true,
+  "homepage": "http://www.dangbeer.com/rgl-0-height-collision-debug",
   "dependencies": {
     "@babel/core": "7.7.4",
     "@svgr/webpack": "4.3.3",
