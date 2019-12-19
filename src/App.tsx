@@ -7,11 +7,13 @@ import 'react-grid-layout/css/styles.css';
 
 
 interface IState {
+  minHeight: number;
   layout: Array<Layout>;
 }
 
 
 const INITIAL_STATE: IState = {
+  minHeight: 0,
   layout: [
     { i: '0', w: 2, h: 50, x: 0, y: 0, minH: 50 },
     { i: '1', w: 2, h: 50, x: 0, y: 50, minH: 50 },
@@ -29,6 +31,8 @@ export default class App extends React.PureComponent<{}, IState> {
   public render(): React.ReactNode {
     return (
       <div className="base">
+        <label>Hidden Element Height (px)</label>
+        <input id="hiddenHeight" type="number" defaultValue={this.state.minHeight} onChange={this.setMinHeight} />
         <button onClick={this.hideElements}>Toggle elements</button>
         <button data-index="1" onClick={this.toggleSingleElement}>Toggle 1</button>
         <button data-index="2" onClick={this.toggleSingleElement}>Toggle 2</button>
@@ -62,7 +66,7 @@ export default class App extends React.PureComponent<{}, IState> {
   }
 
   private isHidden(element: Layout): boolean {
-    return element.maxH !== void 0 && element.h === HIDDEN_HEIGHT;
+    return element.maxH !== void 0 && element.h === this.state.minHeight;
   }
 
   private hideElements = (): void => {
@@ -77,6 +81,13 @@ export default class App extends React.PureComponent<{}, IState> {
             return entry;
         }
       }),
+    });
+  }
+
+  private setMinHeight = (evt: React.ChangeEvent<HTMLInputElement>): void => {
+    this.setState({
+      ...this.state,
+      minHeight: Number(evt.target.value),
     });
   }
 
@@ -100,9 +111,9 @@ export default class App extends React.PureComponent<{}, IState> {
       case void 0:
         return {
           ...element,
-          h: HIDDEN_HEIGHT,
+          h: this.state.minHeight,
           maxH: element.h,
-          minH: HIDDEN_HEIGHT,
+          minH: this.state.minHeight,
         };
       default:
         return {
