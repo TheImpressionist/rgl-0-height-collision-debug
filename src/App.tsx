@@ -19,7 +19,7 @@ const INITIAL_STATE: IState = {
   ],
 };
 
-const HIDDEN_HEIGHT = 10;
+const HIDDEN_HEIGHT = 0;
 
 
 export default class App extends React.PureComponent<{}, IState> {
