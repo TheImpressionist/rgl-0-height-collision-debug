@@ -36,3 +36,26 @@
     transform: rotate(360deg);
   }
 }
+
+.base {
+  width: 100%;
+}
+
+.layout {
+  width: 100%;
+}
+
+.layout .item {
+  border: 1px solid #282c34;
+  background-color: aliceblue;
+  color: #282c34;
+  font-weight: bold;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layout .item.hidden {
+  visibility: hidden;
+}
