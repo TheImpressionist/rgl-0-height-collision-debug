@@ -1,28 +1,34 @@
 import React from 'react';
 import Container, { Layout } from 'react-grid-layout';
 
+import { findUpperSibling, findNearestSiblingToAppendAfter, hiddenElementExists } from './utils';
 
 import './App.css';
 import 'react-grid-layout/css/styles.css';
 
 
+export interface IHiddenElement {
+  element: Layout;
+  upperSibling: string | undefined;
+}
+
+
 interface IState {
   minHeight: number;
   layout: Array<Layout>;
+  hiddenElements: Array<IHiddenElement>;
 }
 
 
 const INITIAL_STATE: IState = {
   minHeight: 0,
   layout: [
-    { i: '0', w: 2, h: 50, x: 0, y: 0, minH: 50 },
-    { i: '1', w: 2, h: 50, x: 0, y: 50, minH: 50 },
-    { i: '2', w: 2, h: 50, x: 0, y: 100, minH: 50 },
+    { i: '0', w: 1, h: 50, x: 0, y: 0 },
+    { i: '1', w: 1, h: 100, x: 2, y: 1 },
+    { i: '2', w: 3, h: 50, x: 0, y: 2 },
   ],
+  hiddenElements: [],
 };
-
-const HIDDEN_HEIGHT = 0;
-
 
 export default class App extends React.PureComponent<{}, IState> {
 
@@ -46,7 +52,7 @@ export default class App extends React.PureComponent<{}, IState> {
             isResizable={true}
             compactType="vertical"
             layout={this.state.layout}
-            cols={2}
+            cols={3}
             rowHeight={1}
             onLayoutChange={this.onLayoutChange}
           >
@@ -70,18 +76,18 @@ export default class App extends React.PureComponent<{}, IState> {
   }
 
   private hideElements = (): void => {
-    this.setState({
-      ...this.state,
-      layout: this.state.layout.map(entry => {
-        switch (entry.i) {
-          case '1':
-          case '2':
-            return this.toggleElement(entry);
-          default:
-            return entry;
-        }
-      }),
-    });
+    // this.setState({
+    //   ...this.state,
+    //   layout: this.state.layout.map(entry => {
+    //     switch (entry.i) {
+    //       case '1':
+    //       case '2':
+    //         return this.toggleElement(entry);
+    //       default:
+    //         return entry;
+    //     }
+    //   }),
+    // });
   }
 
   private setMinHeight = (evt: React.ChangeEvent<HTMLInputElement>): void => {
@@ -94,27 +100,46 @@ export default class App extends React.PureComponent<{}, IState> {
   private toggleSingleElement = (evt: React.MouseEvent<HTMLButtonElement>): void => {
     const index = evt.currentTarget.dataset.index;
 
-    this.setState({
-      layout: this.state.layout.map(entry => {
-        switch (entry.i) {
-          case index:
-            return this.toggleElement(entry);
-          default:
-            return entry;
-        }
-      }),
-    });
+    if (!index) {
+      return;
+    }
+
+    if (hiddenElementExists(index, this.state.hiddenElements)) {
+      return this.restoreHiddenElement(index);
+    }
+
+    const element = this.state.layout.find(entry => entry.i === index);
+
+    if (!element) {
+      return;
+    }
+    
+
+    this.pushToHiddenElements(element);
+
+    // this.setState({
+    //   layout: this.state.layout.map(entry => {
+    //     switch (entry.i) {
+    //       case index:
+    //         return this.toggleElement(entry);
+    //       default:
+    //         return entry;
+    //     }
+    //   }),
+    // });
   }
 
   private toggleElement(element: Layout): Layout {
     switch (element.maxH) {
       case void 0:
-        return {
+        const hiddenElement = {
           ...element,
           h: this.state.minHeight,
           maxH: element.h,
           minH: this.state.minHeight,
         };
+        this.pushToHiddenElements(element);
+        return hiddenElement;
       default:
         return {
           ...element,
@@ -123,6 +148,67 @@ export default class App extends React.PureComponent<{}, IState> {
           maxH: void 0,
         }
     }
+  }
+
+  private pushToHiddenElements(element: Layout): void {
+    const sibling = findUpperSibling(element, this.state.layout);
+    const hiddenElement: IHiddenElement = {
+      element,
+      upperSibling: sibling?.i,
+    };
+
+    this.setState({
+      ...this.state,
+      layout: this.state.layout.filter(entry => entry.i !== element.i),
+      hiddenElements: [...this.state.hiddenElements, hiddenElement],
+    });
+  }
+
+  private restoreHiddenElement(index: string): void {
+    const element = this.state.hiddenElements.find(entry => entry.element.i === index);
+
+    if (!element) {
+      return;
+    }
+
+    if (!element.upperSibling) {
+      return this.setState({
+        ...this.state,
+        layout: [element.element, ...this.state.layout],
+        hiddenElements: this.state.hiddenElements.filter(entry => entry.element.i === element.element.i),
+      });
+    }
+
+    const appendAfterSibling = findNearestSiblingToAppendAfter(
+      element.upperSibling,
+      this.state.layout,
+      this.state.hiddenElements,
+    );
+    console.log('Append sibling:', appendAfterSibling);
+    if (appendAfterSibling === void 0) {
+      return this.setState({
+        ...this.state,
+        layout: [{
+          ...element.element,
+          y: 0,
+        },...this.state.layout],
+        hiddenElements: this.state.hiddenElements.filter(entry => entry.element.i !== element.element.i),
+      });
+    }
+
+    /**
+     * TODO:
+     * 
+     * Still needs to push down all the other elements underneath it
+     */
+    return this.setState({
+      ...this.state,
+      layout: [{
+        ...element.element,
+        y: appendAfterSibling.y + appendAfterSibling.h,
+      },...this.state.layout],
+      hiddenElements: this.state.hiddenElements.filter(entry => entry.element.i !== element.element.i),
+    });
   }
 
   private onLayoutChange = (nextLayout: Array<Layout>): void => {
