@@ -129,20 +129,12 @@ export default class App extends React.PureComponent<{}, IState> {
     if (!hiddenElement) {
       return;
     }
-    /**
-     * Alternative solution to bellow code:
-     * 
-     * Produce a map on init with bottom siblings for all elements.
-     * When visibility is being restored, make sure that old positions are being respected,
-     * i.e. it is exactly bellow the given component.
-     * However, this will include a lot of maps, which might impact the performance.
-     */
+
     this.setState((state: IState) => {
       const nextLayout = state.layout
         .map(entry => {
           switch (entry.i) {
             case index:
-              console.log('Yass:', entry.maxW);
               return {
                 ...entry,
                 w: entry.maxW as number,
@@ -176,28 +168,6 @@ export default class App extends React.PureComponent<{}, IState> {
       }
 
       nextLayout = this.mapElementSiblingPositions(element, nextLayout);
-      // if (!element || element.static) {
-      //   continue;
-      // }
-
-      // const siblings = this.layoutYSiblingMap[key];
-      //       nextLayout = nextLayout.map(entry => {
-      //         const isSibling = siblings.includes(entry.i);
-
-      //         // Hidden elements are static and will never move, so we don't do anything with it
-      //         if (entry.static || !isSibling) {
-      //           return entry;
-      //         }
-
-              // if (entry.y !== element.y + element.h) {
-              //   return {
-              //     ...entry,
-              //     y: element.y + element.h,
-              //   };
-              // }
-
-      //         return entry;
-      //       });
     }
 
     return nextLayout;
@@ -215,9 +185,9 @@ export default class App extends React.PureComponent<{}, IState> {
         continue;
       }
 
-      // If the element is hidden we adjust its siblings instead to account for new positions
+      // If the element is hidden we adjust its siblings instead to account for new positions related to itself.
+      // That's because all the siblings bellow the hidden sibling should adhere to the current element's position.
       if (entry.static) {
-        console.log('Mapping hidden:', entry.i, 'Sibling of:', element.i, 'Forcing Y:', forceY);
         const mappedLayout = this.mapElementSiblingPositions(entry, nextLayout, forceY !== void 0 ? forceY : element.y + element.h);
 
         nextLayout = nextLayout.map(nEntry => {
