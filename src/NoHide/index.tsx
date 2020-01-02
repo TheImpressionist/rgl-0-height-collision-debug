@@ -1,0 +1,233 @@
+
+import React from 'react';
+import { Layout } from 'react-grid-layout';
+
+import Editor from './EditorView';
+import View from './FinalView';
+import { findBottomSiblings } from '../utils';
+
+import './Style.css';
+import 'react-grid-layout/css/styles.css';
+import { LayoutUpdateSource } from './Enums';
+
+
+export interface IHiddenElement {
+  i: string;
+  bottomSiblings: Array<string>;
+}
+
+
+interface IState {
+  layout: Array<Layout>;
+  hiddenElements: Array<IHiddenElement>;
+}
+
+
+export default class App extends React.PureComponent<{}, IState> {
+
+  public state: IState = {
+    layout: [],
+    hiddenElements: [],
+  }
+
+  private layoutYSiblingMap: Record<string, Array<string>> = {};
+
+  public render(): React.ReactNode {
+    return (
+      <div className="base">
+        <Editor setLayout={this.setLayout} />
+        <View layout={this.state.layout} toggleElement={this.toggleElement} onLayoutChange={this.setLayout} />
+      </div>
+    );
+  }
+
+  private setLayout = (layout: Array<Layout>, source: LayoutUpdateSource): void => {
+    if (source === LayoutUpdateSource.Editor) {
+      this.buildLayoutYSiblingMap(layout);
+    }
+
+    this.setState((state: IState) => {
+      return {
+        ...state,
+        layout,
+      };
+    })
+  }
+
+  private buildLayoutYSiblingMap(layout: Array<Layout>): void {
+    for (const element of layout) {
+      this.layoutYSiblingMap[element.i] = findBottomSiblings(element, layout).map(entry => entry.i);
+    }
+  }
+
+  private toggleElement = (index: string): void => {
+    const element = this.state.layout.find(entry => entry.i === index);
+
+    if (!element) {
+      return;
+    }
+
+    switch (true) {
+      case element.i === index && element.maxH === void 0 && element.h !== 0:
+        return this.hideElement(index);
+      case element.i === index && element.maxH !== void 0 && element.h === 0:
+        return this.showElement(index);
+      default:
+        return;
+    }
+  }
+
+  private hideElement(index: string): void {
+    this.setState((state: IState) => {
+      const element = state.layout.find(entry => entry.i === index);
+
+      return {
+        ...state,
+        layout: state.layout.map(entry => {
+          switch (entry.i) {
+            case index:
+              return {
+                ...entry,
+                w: 0,
+                h: 0,
+                maxH: entry.h,
+                maxW: entry.w,
+                static: true,
+              };
+            default:
+              return entry;
+          }
+        }),
+        hiddenElements: !element ? state.hiddenElements : [...state.hiddenElements, {
+          i: element.i,
+          bottomSiblings: findBottomSiblings(element, state.layout).map(entry => entry.i),
+        }],
+      };
+    });
+  }
+
+  private showElement(index: string): void {
+    const hiddenElement = this.state.hiddenElements.find(entry => entry.i === index);
+
+    if (!hiddenElement) {
+      return;
+    }
+    /**
+     * Alternative solution to bellow code:
+     * 
+     * Produce a map on init with bottom siblings for all elements.
+     * When visibility is being restored, make sure that old positions are being respected,
+     * i.e. it is exactly bellow the given component.
+     * However, this will include a lot of maps, which might impact the performance.
+     */
+    this.setState((state: IState) => {
+      const nextLayout = state.layout
+        .map(entry => {
+          switch (entry.i) {
+            case index:
+              return {
+                ...entry,
+                w: entry.maxW as number,
+                h: entry.maxH as number,
+                maxW: void 0,
+                maxH: void 0,
+                static: false,
+              };
+            default:
+              return entry;
+          }
+        });
+
+      return {
+        ...state,
+        layout: this.normalizePositions(nextLayout),
+        hiddenElements: state.hiddenElements.filter(entry => entry.i !== hiddenElement.i),
+      };
+    });
+  }
+
+  private normalizePositions(layout: Array<Layout>): Array<Layout> {
+    const keys = Object.keys(this.layoutYSiblingMap);
+    let nextLayout = [...layout];
+
+    for (const key of keys) {
+      const element = nextLayout.find(entry => entry.i === key);
+
+      if (!element || element.static) {
+        continue;
+      }
+
+      nextLayout = this.mapElementSiblingPositions(element, nextLayout);
+      // if (!element || element.static) {
+      //   continue;
+      // }
+
+      // const siblings = this.layoutYSiblingMap[key];
+      //       nextLayout = nextLayout.map(entry => {
+      //         const isSibling = siblings.includes(entry.i);
+
+      //         // Hidden elements are static and will never move, so we don't do anything with it
+      //         if (entry.static || !isSibling) {
+      //           return entry;
+      //         }
+
+              // if (entry.y !== element.y + element.h) {
+              //   return {
+              //     ...entry,
+              //     y: element.y + element.h,
+              //   };
+              // }
+
+      //         return entry;
+      //       });
+    }
+
+    return nextLayout;
+  }
+
+  private mapElementSiblingPositions(element: Layout, layout: Array<Layout>, forceY?: number): Array<Layout> {
+    let nextLayout = [...layout];
+    const siblings = this.layoutYSiblingMap[element.i];
+
+    for (let i = 0, ii = nextLayout.length; i < ii; i++) {
+      const entry = nextLayout[i];
+      const isSibling = siblings.includes(entry.i);
+
+      if (!isSibling) {
+        continue;
+      }
+
+      // If the element is hidden we adjust its siblings instead to account for new positions
+      if (entry.static) {
+        console.log('Mapping hidden:', entry.i, 'Sibling of:', element.i, 'Forcing Y:', forceY);
+        const mappedLayout = this.mapElementSiblingPositions(entry, nextLayout, forceY !== void 0 ? forceY : element.y + element.h);
+
+        nextLayout = nextLayout.map(nEntry => {
+          const mappedElement = mappedLayout.find(mappedEntry => mappedEntry.i === nEntry.i);
+
+          if (!mappedElement) {
+            return nEntry;
+          }
+
+          return mappedElement;
+        });
+      }
+
+      if (forceY === void 0 && entry.y !== element.y + element.h) {
+        nextLayout[i] = {
+          ...entry,
+          y: element.y + element.h,
+        };
+      }
+
+      if (forceY !== void 0) {
+        nextLayout[i] = {
+          ...entry,
+          y: forceY,
+        };
+      }
+    }
+
+    return nextLayout;
+  }
+}

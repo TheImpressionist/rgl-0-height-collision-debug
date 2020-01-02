@@ -1,15 +1,33 @@
 import React from 'react';
 import Container, { Layout } from 'react-grid-layout';
 
-import { findUpperSibling, findNearestSiblingToAppendAfter, hiddenElementExists } from './utils';
+import AnotherGrid from './NativeSolution';
+
+import {
+  findUpperSibling,
+  findNearestSiblingToAppendAfter,
+  findBottomSiblings,
+  adjustBottomSiblings,
+} from './utils';
 
 import './App.css';
 import 'react-grid-layout/css/styles.css';
 
 
+export interface IBottomSiblings {
+  i: string;
+  x: number;
+  y: number;
+}
+
 export interface IHiddenElement {
   element: Layout;
   upperSibling: string | undefined;
+  upperSiblingPos?: {
+    x: number;
+    y: number;
+  };
+  bellowSiblings: Array<IBottomSiblings>;
 }
 
 
@@ -23,9 +41,10 @@ interface IState {
 const INITIAL_STATE: IState = {
   minHeight: 0,
   layout: [
-    { i: '0', w: 1, h: 50, x: 0, y: 0 },
-    { i: '1', w: 1, h: 100, x: 2, y: 1 },
-    { i: '2', w: 3, h: 50, x: 0, y: 2 },
+    { i: '0', w: 2, h: 50, x: 0, y: 0 },
+    { i: '1', w: 2, h: 50, x: 2, y: 50 },
+    { i: '2', w: 4, h: 50, x: 0, y: 150 },
+    { i: '3', w: 2, h: 50, x: 2, y: 200 },
   ],
   hiddenElements: [],
 };
@@ -37,11 +56,12 @@ export default class App extends React.PureComponent<{}, IState> {
   public render(): React.ReactNode {
     return (
       <div className="base">
+        <h1>Custom solution</h1>
         <label>Hidden Element Height (px)</label>
         <input id="hiddenHeight" type="number" defaultValue={this.state.minHeight} onChange={this.setMinHeight} />
-        <button onClick={this.hideElements}>Toggle elements</button>
         <button data-index="1" onClick={this.toggleSingleElement}>Toggle 1</button>
         <button data-index="2" onClick={this.toggleSingleElement}>Toggle 2</button>
+        <button data-index="3" onClick={this.toggleSingleElement}>Toggle 3</button>
 
         <div className="layout">
           <Container
@@ -52,12 +72,18 @@ export default class App extends React.PureComponent<{}, IState> {
             isResizable={true}
             compactType="vertical"
             layout={this.state.layout}
-            cols={3}
+            cols={4}
             rowHeight={1}
+            onDragStop={this.onDragStop}
             onLayoutChange={this.onLayoutChange}
           >
             {this.mapLayoutItems()}
           </Container>
+
+          <br />
+          <h1>Treating hidden elements as static but not removing from grid for performance</h1>
+
+          <AnotherGrid />
         </div>
       </div>
     );
@@ -75,21 +101,6 @@ export default class App extends React.PureComponent<{}, IState> {
     return element.maxH !== void 0 && element.h === this.state.minHeight;
   }
 
-  private hideElements = (): void => {
-    // this.setState({
-    //   ...this.state,
-    //   layout: this.state.layout.map(entry => {
-    //     switch (entry.i) {
-    //       case '1':
-    //       case '2':
-    //         return this.toggleElement(entry);
-    //       default:
-    //         return entry;
-    //     }
-    //   }),
-    // });
-  }
-
   private setMinHeight = (evt: React.ChangeEvent<HTMLInputElement>): void => {
     this.setState({
       ...this.state,
@@ -104,50 +115,34 @@ export default class App extends React.PureComponent<{}, IState> {
       return;
     }
 
-    if (hiddenElementExists(index, this.state.hiddenElements)) {
-      return this.restoreHiddenElement(index);
-    }
+    return this.setState((state: IState) => {
+      return {
+        ...state,
+        layout: state.layout.map(entry => {
+          switch (entry.i) {
+            case entry.i:
+              return {
+                ...entry,
+                h: entry.h === 0 && entry.maxH !== void 0 ? entry.maxH : 0,
+                maxH: entry.h === 0 && entry.maxH !== void 0 ? void 0 : entry.h,
+              };
+            default:
+              return entry;
+          }
+        }),
+      };
+    }, () => console.log('Your state:', this.state));
+    // if (hiddenElementExists(index, this.state.hiddenElements)) {
+    //   return this.restoreHiddenElement(index);
+    // }
 
-    const element = this.state.layout.find(entry => entry.i === index);
+    // const element = this.state.layout.find(entry => entry.i === index);
 
-    if (!element) {
-      return;
-    }
+    // if (!element) {
+    //   return;
+    // }
     
-
-    this.pushToHiddenElements(element);
-
-    // this.setState({
-    //   layout: this.state.layout.map(entry => {
-    //     switch (entry.i) {
-    //       case index:
-    //         return this.toggleElement(entry);
-    //       default:
-    //         return entry;
-    //     }
-    //   }),
-    // });
-  }
-
-  private toggleElement(element: Layout): Layout {
-    switch (element.maxH) {
-      case void 0:
-        const hiddenElement = {
-          ...element,
-          h: this.state.minHeight,
-          maxH: element.h,
-          minH: this.state.minHeight,
-        };
-        this.pushToHiddenElements(element);
-        return hiddenElement;
-      default:
-        return {
-          ...element,
-          h: element.maxH,
-          minH: element.maxH,
-          maxH: void 0,
-        }
-    }
+    // this.pushToHiddenElements(element);
   }
 
   private pushToHiddenElements(element: Layout): void {
@@ -155,6 +150,10 @@ export default class App extends React.PureComponent<{}, IState> {
     const hiddenElement: IHiddenElement = {
       element,
       upperSibling: sibling?.i,
+      upperSiblingPos: sibling
+        ? { x: sibling.x, y: sibling.y }
+        : void 0,
+      bellowSiblings: findBottomSiblings(element, this.state.layout),
     };
 
     this.setState({
@@ -174,8 +173,19 @@ export default class App extends React.PureComponent<{}, IState> {
     if (!element.upperSibling) {
       return this.setState({
         ...this.state,
-        layout: [element.element, ...this.state.layout],
-        hiddenElements: this.state.hiddenElements.filter(entry => entry.element.i === element.element.i),
+        layout: adjustBottomSiblings(
+          element.element,
+          element.bellowSiblings,
+          [{
+            ...element.element,
+            y: 0,
+          }, ...this.state.layout],
+        ),
+        // layout: [{
+        //   ...element.element,
+        //   y: 0,
+        // }, ...this.state.layout],
+        hiddenElements: this.state.hiddenElements.filter(entry => entry.element.i !== element.element.i),
       });
     }
 
@@ -184,37 +194,65 @@ export default class App extends React.PureComponent<{}, IState> {
       this.state.layout,
       this.state.hiddenElements,
     );
-    console.log('Append sibling:', appendAfterSibling);
+
     if (appendAfterSibling === void 0) {
       return this.setState({
         ...this.state,
-        layout: [{
-          ...element.element,
-          y: 0,
-        },...this.state.layout],
+        layout: adjustBottomSiblings(
+          element.element,
+          element.bellowSiblings,
+          [{
+            ...element.element,
+            y: 0,
+          }, ...this.state.layout],
+        ),
+        // layout: [{
+        //   ...element.element,
+        //   y: 0,
+        // },...this.state.layout],
         hiddenElements: this.state.hiddenElements.filter(entry => entry.element.i !== element.element.i),
       });
     }
 
-    /**
-     * TODO:
-     * 
-     * Still needs to push down all the other elements underneath it
-     */
     return this.setState({
       ...this.state,
-      layout: [{
-        ...element.element,
-        y: appendAfterSibling.y + appendAfterSibling.h,
-      },...this.state.layout],
+      layout: adjustBottomSiblings(
+        element.element,
+        element.bellowSiblings,
+        [{
+          ...element.element,
+          y: appendAfterSibling.y + appendAfterSibling.h,
+        }, ...this.state.layout],
+      ),
+      // layout: [{
+      //   ...element.element,
+      //   y: appendAfterSibling.y + appendAfterSibling.h,
+      // },...this.state.layout],
       hiddenElements: this.state.hiddenElements.filter(entry => entry.element.i !== element.element.i),
     });
   }
 
+  private onDragStop = (_: Array<Layout>, __: Layout, item: Layout): void => {
+
+  }
+
   private onLayoutChange = (nextLayout: Array<Layout>): void => {
+    // This should only be used to normalize the layout, and not to control changes
+    // Because this way it's hard to track which element actually moved
+    // Unless we capture that element through onDragStop
+    // That way we can determine here whether to do any sibling updates or not?
+
     this.setState({
       ...this.state,
       layout: nextLayout,
+      // hiddenElements: this.updateHiddenElementSiblings(nextLayout),
     });
+  }
+
+  private updateHiddenElementSiblings(nextLayout: Array<Layout>): Array<IHiddenElement> {
+    return this.state.hiddenElements.map(entry => ({
+      ...entry,
+      bellowSiblings: findBottomSiblings(entry.element, this.state.layout)
+    }));
   }
 }
