@@ -42,8 +42,8 @@ export default class View extends React.PureComponent<IProps, {}> {
   }
 
   private mapButtons(): Array<React.ReactNode> {
-    return this.props.layout.map(entry => (
-      <button data-index={entry.i} onClick={this.toggleSingleElement}>Toggle {entry.i}</button>
+    return this.props.layout.sort((a, b) => Number(a.i) > Number(b.i) ? 1 : -1).map(entry => (
+      <button key={entry.i} data-index={entry.i} onClick={this.toggleSingleElement}>Toggle {entry.i}</button>
     ))
   }
 

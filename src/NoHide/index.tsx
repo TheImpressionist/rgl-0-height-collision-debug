@@ -50,8 +50,24 @@ export default class App extends React.PureComponent<{}, IState> {
       return {
         ...state,
         layout,
+        hiddenElements: source === LayoutUpdateSource.Editor ? this.buildHiddenElementState(layout) : state.hiddenElements,
       };
-    })
+    });
+  }
+
+  private buildHiddenElementState(layout: Array<Layout>): Array<IHiddenElement> {
+    const hiddenElements: Array<IHiddenElement> = [];
+
+    for (const element of layout) {
+      if (element.maxH !== void 0) {
+        hiddenElements.push({
+          i: element.i,
+          bottomSiblings: findBottomSiblings(element, layout).map(entry => entry.i),
+        });
+      }
+    }
+
+    return hiddenElements
   }
 
   private buildLayoutYSiblingMap(layout: Array<Layout>): void {
@@ -86,6 +102,7 @@ export default class App extends React.PureComponent<{}, IState> {
         layout: state.layout.map(entry => {
           switch (entry.i) {
             case index:
+              console.log('Ya, cool:', entry.w);
               return {
                 ...entry,
                 w: 0,
@@ -125,6 +142,7 @@ export default class App extends React.PureComponent<{}, IState> {
         .map(entry => {
           switch (entry.i) {
             case index:
+              console.log('Yass:', entry.maxW);
               return {
                 ...entry,
                 w: entry.maxW as number,

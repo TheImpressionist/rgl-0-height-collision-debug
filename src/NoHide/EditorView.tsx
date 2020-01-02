@@ -75,7 +75,7 @@ export default class EditorView extends React.PureComponent<IProps, IState> {
 
   private mapButtons(): Array<React.ReactNode> {
     return this.state.layout.map(entry => (
-      <button data-index={entry.i} onClick={this.toggleSingleElement}>Toggle {entry.i}</button>
+      <button key={entry.i} data-index={entry.i} onClick={this.toggleSingleElement}>Toggle {entry.i}</button>
     ))
   }
 
@@ -106,6 +106,7 @@ export default class EditorView extends React.PureComponent<IProps, IState> {
             case index:
               return {
                 ...entry,
+                maxW: entry.maxW !== void 0 ? void 0 : entry.w,
                 maxH: entry.maxH !== void 0 ? void 0 : entry.h,
               };
             default:

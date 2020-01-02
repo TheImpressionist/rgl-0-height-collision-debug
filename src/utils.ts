@@ -14,9 +14,22 @@ export function findUpperSibling(element: Layout, elements: Array<Layout>): Layo
 
 
 export function findBottomSiblings(element: Layout, elements: Array<Layout>): Array<IBottomSiblings> {
+  const x2 = element.x;
+  const x3 = element.x + element.w;
+
   return elements
     .sort((a, b) => a >= b ? -1 : 1)
-    .filter(entry => element.i !== entry.i && element.y + element.h === entry.y)
+    .filter(entry => {
+      const x0 = entry.x;
+      const x1 = entry.x + entry.w;
+      const h = element.h === 0 && element.maxH !== void 0 ? element.maxH : element.h;
+      return element.i !== entry.i && element.y + h === entry.y && (
+        (x3 >= x0 && x3 <= x1) ||
+        (x2 >= x0 && x2 <= x1) ||
+        (x0 >= x2 && x0 <= x3 && x1 >= x2 && x1 <= x3) ||
+        (x2 >= x0 && x2 <= x1 && x3 >= x0 && x3 <= x1)
+      );
+    })
     .map(entry => ({
       i: entry.i,
       x: entry.x,
