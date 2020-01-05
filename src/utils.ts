@@ -68,17 +68,12 @@ export function findBottomSiblings(element: Layout, elements: Array<Layout>): Ar
   if (!siblings.length) {
     let firstFoundSibling: Layout;
 
-    return sorted.filter((entry, _, arr) => {
+    return sorted.filter(entry => {
       const x2 = entry.x;
       const x3 = entry.x + entry.w;
 
       if (!firstFoundSibling) {
         const intersects = entry.i !== element.i && entry.y >= element.y + element.h && intersectsXAxis(x0, x1, x2, x3);
-
-        if (element.i === '2' && intersects) {
-          console.log('Found the first:', entry, 'On array:', arr);
-          console.log('Y:', entry.y >= element.y + element.h, 'X:', intersectsXAxis(x0, x1, x2, x3));
-        }
 
         if (intersects) {
           firstFoundSibling = entry;
