@@ -16,25 +16,76 @@ export function findUpperSibling(element: Layout, elements: Array<Layout>): Layo
 export function findBottomSiblings(element: Layout, elements: Array<Layout>): Array<IBottomSiblings> {
   const x2 = element.x;
   const x3 = element.x + element.w;
+  // ? -1 : 1
+  const sorted = elements.sort((a, b) => {
+    switch (true) {
+      case a > b:
+        return -1;
+      case a < b:
+        return 1;
+      default:
+        return 0;
+    }
+  });
+  const siblings = sorted.filter(entry => {
+    const x0 = entry.x;
+    const x1 = entry.x + entry.w;
+    const h = element.h === 0 && element.maxH !== void 0 ? element.maxH : element.h;
+    return element.i !== entry.i && element.y + h === entry.y && (
+      (x3 >= x0 && x3 <= x1) ||
+      (x2 >= x0 && x2 <= x1) ||
+      (x0 >= x2 && x0 <= x3 && x1 >= x2 && x1 <= x3) ||
+      (x2 >= x0 && x2 <= x1 && x3 >= x0 && x3 <= x1)
+    );
+  });
 
-  return elements
-    .sort((a, b) => a >= b ? -1 : 1)
-    .filter(entry => {
+  // If no bottom siblings, it should instead look for closest bottom sibling that interacts along X axis
+  if (!siblings.length) {
+    const selfIndex = sorted.findIndex(entry => entry.i === element.i);
+
+    // Find all the other ones that are potentially bellow it
+    // Filter them out with only the first ones that it might come into contact with remaining in the list
+    return sorted.filter((entry, index) => {
       const x0 = entry.x;
       const x1 = entry.x + entry.w;
-      const h = element.h === 0 && element.maxH !== void 0 ? element.maxH : element.h;
-      return element.i !== entry.i && element.y + h === entry.y && (
-        (x3 >= x0 && x3 <= x1) ||
-        (x2 >= x0 && x2 <= x1) ||
-        (x0 >= x2 && x0 <= x3 && x1 >= x2 && x1 <= x3) ||
-        (x2 >= x0 && x2 <= x1 && x3 >= x0 && x3 <= x1)
-      );
-    })
-    .map(entry => ({
-      i: entry.i,
-      x: entry.x,
-      y: entry.y,
-    }));
+
+      if (index > selfIndex) {
+        return (
+          (x3 >= x0 && x3 <= x1) ||
+          (x2 >= x0 && x2 <= x1) ||
+          (x0 >= x2 && x0 <= x3 && x1 >= x2 && x1 <= x3) ||
+          (x2 >= x0 && x2 <= x1 && x3 >= x0 && x3 <= x1)
+        );
+      }
+
+      return false;
+    });
+  }
+
+  return siblings.map(entry => ({
+    i: entry.i,
+    x: entry.x,
+    y: entry.y,
+  }))
+
+
+  // return elements
+  //   .filter(entry => {
+  //     const x0 = entry.x;
+  //     const x1 = entry.x + entry.w;
+  //     const h = element.h === 0 && element.maxH !== void 0 ? element.maxH : element.h;
+  //     return element.i !== entry.i && element.y + h === entry.y && (
+  //       (x3 >= x0 && x3 <= x1) ||
+  //       (x2 >= x0 && x2 <= x1) ||
+  //       (x0 >= x2 && x0 <= x3 && x1 >= x2 && x1 <= x3) ||
+  //       (x2 >= x0 && x2 <= x1 && x3 >= x0 && x3 <= x1)
+  //     );
+  //   })
+  //   .map(entry => ({
+  //     i: entry.i,
+  //     x: entry.x,
+  //     y: entry.y,
+  //   }));
 }
 
 
