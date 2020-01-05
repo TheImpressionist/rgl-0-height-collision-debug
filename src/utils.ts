@@ -13,53 +13,82 @@ export function findUpperSibling(element: Layout, elements: Array<Layout>): Layo
 }
 
 
+export function intersectsXAxis(x0: number, x1: number, x2: number, x3: number): boolean {
+  // Old collision check
+  // (x3 >= x0 && x3 <= x1) ||
+  // (x2 >= x0 && x2 <= x1) ||
+  // (x0 >= x2 && x0 <= x3 && x1 >= x2 && x1 <= x3) ||
+  // (x2 >= x0 && x2 <= x1 && x3 >= x0 && x3 <= x1)
+  return (x2 >= x0 && x2 < x1) || (x3 > x0 && x3 <= x1);
+}
+
+
 export function findBottomSiblings(element: Layout, elements: Array<Layout>): Array<IBottomSiblings> {
-  const x2 = element.x;
-  const x3 = element.x + element.w;
+  const x0 = element.x;
+  const x1 = element.x + element.w;
   // ? -1 : 1
   const sorted = elements.sort((a, b) => {
     switch (true) {
-      case a > b:
-        return -1;
-      case a < b:
+      case a.y > b.y:
         return 1;
+      case a.y < b.y:
+        return -1;
       default:
         return 0;
     }
   });
   const siblings = sorted.filter(entry => {
-    const x0 = entry.x;
-    const x1 = entry.x + entry.w;
+    const x2 = entry.x;
+    const x3 = entry.x + entry.w;
     const h = element.h === 0 && element.maxH !== void 0 ? element.maxH : element.h;
-    return element.i !== entry.i && element.y + h === entry.y && (
-      (x3 >= x0 && x3 <= x1) ||
-      (x2 >= x0 && x2 <= x1) ||
-      (x0 >= x2 && x0 <= x3 && x1 >= x2 && x1 <= x3) ||
-      (x2 >= x0 && x2 <= x1 && x3 >= x0 && x3 <= x1)
-    );
+    return element.i !== entry.i && element.y + h === entry.y && intersectsXAxis(x0, x1, x2, x3);
   });
 
   // If no bottom siblings, it should instead look for closest bottom sibling that interacts along X axis
+  // if (!siblings.length) {
+  //   // Find all the other ones that are potentially bellow it
+  //   // Filter them out with only the first ones that it might come into contact with remaining in the list
+  //   // Only first X-axis occurences needed
+  //   return sorted.filter(entry => {
+      // const x2 = entry.x;
+      // const x3 = entry.x + entry.w;
+
+  //     return entry.i !== element.i && entry.y >= element.y + element.h && intersectsXAxis(x0, x1, x2, x3);
+  //   });
+  // }
+
+  /**
+   * NOTE:
+   * 
+   * The above code is partially correct.
+   * What needs to be done is that I need to find all next potential siblings.
+   * But not the ones after the found siblings.
+   */
+
   if (!siblings.length) {
-    const selfIndex = sorted.findIndex(entry => entry.i === element.i);
+    let firstFoundSibling: Layout;
 
-    // Find all the other ones that are potentially bellow it
-    // Filter them out with only the first ones that it might come into contact with remaining in the list
-    return sorted.filter((entry, index) => {
-      const x0 = entry.x;
-      const x1 = entry.x + entry.w;
+    return sorted.filter((entry, _, arr) => {
+      const x2 = entry.x;
+      const x3 = entry.x + entry.w;
 
-      if (index > selfIndex) {
-        return (
-          (x3 >= x0 && x3 <= x1) ||
-          (x2 >= x0 && x2 <= x1) ||
-          (x0 >= x2 && x0 <= x3 && x1 >= x2 && x1 <= x3) ||
-          (x2 >= x0 && x2 <= x1 && x3 >= x0 && x3 <= x1)
-        );
+      if (!firstFoundSibling) {
+        const intersects = entry.i !== element.i && entry.y >= element.y + element.h && intersectsXAxis(x0, x1, x2, x3);
+
+        if (element.i === '2' && intersects) {
+          console.log('Found the first:', entry, 'On array:', arr);
+          console.log('Y:', entry.y >= element.y + element.h, 'X:', intersectsXAxis(x0, x1, x2, x3));
+        }
+
+        if (intersects) {
+          firstFoundSibling = entry;
+        }
+
+        return intersects;
       }
 
-      return false;
-    });
+      return entry.i !== element.i && entry.y === firstFoundSibling.y && intersectsXAxis(x0, x1, x2, x3);
+    })
   }
 
   return siblings.map(entry => ({

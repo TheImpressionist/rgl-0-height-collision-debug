@@ -74,6 +74,8 @@ export default class App extends React.PureComponent<{}, IState> {
     for (const element of layout) {
       this.layoutYSiblingMap[element.i] = findBottomSiblings(element, layout).map(entry => entry.i);
     }
+
+    console.log('Built Y Sibling map:', this.layoutYSiblingMap);
   }
 
   private toggleElement = (index: string): void => {
@@ -102,7 +104,6 @@ export default class App extends React.PureComponent<{}, IState> {
         layout: state.layout.map(entry => {
           switch (entry.i) {
             case index:
-              console.log('Ya, cool:', entry.w);
               return {
                 ...entry,
                 w: 0,
@@ -153,7 +154,7 @@ export default class App extends React.PureComponent<{}, IState> {
         layout: this.normalizePositions(nextLayout),
         hiddenElements: state.hiddenElements.filter(entry => entry.i !== hiddenElement.i),
       };
-    });
+    }, () => console.log('Next state:', this.state));
   }
 
   private normalizePositions(layout: Array<Layout>): Array<Layout> {
