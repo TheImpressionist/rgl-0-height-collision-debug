@@ -170,7 +170,7 @@ export default class App extends React.PureComponent<{}, IState> {
 
       nextLayout = this.mapElementSiblingPositions(element, nextLayout);
     }
-
+    console.log('Mapped new layout:', JSON.parse(JSON.stringify(nextLayout)));
     return nextLayout;
   }
 
@@ -202,14 +202,15 @@ export default class App extends React.PureComponent<{}, IState> {
         });
       }
 
-      if (forceY === void 0 && entry.y !== element.y + element.h) {
+      // entry.y !== element.y + element.h
+      if (forceY === void 0) {
         nextLayout[i] = {
           ...entry,
           y: element.y + element.h,
         };
       }
 
-      if (forceY !== void 0) {
+      if (forceY !== void 0 && forceY >= nextLayout[i].y) {
         nextLayout[i] = {
           ...entry,
           y: forceY,
