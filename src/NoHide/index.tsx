@@ -149,77 +149,99 @@ export default class App extends React.PureComponent<{}, IState> {
 
       return {
         ...state,
-        layout: this.normalizePositions(nextLayout),
+        layout: this.normalizePositions(index, nextLayout),
         hiddenElements: state.hiddenElements.filter(entry => entry.i !== hiddenElement.i),
       };
     });
   }
 
-  private normalizePositions(layout: Array<Layout>): Array<Layout> {
-    const keys = Object.keys(this.layoutYSiblingMap);
-    let nextLayout = [...layout];
+  /**
+   * Normalizes positions so they would follow the correct order as on init.
+   * 
+   * @param elementIndex Index of an element that got triggered to be shown
+   * @param layout       Layout upon which the action takes place
+   */
+  private normalizePositions(elementIndex: string, layout: Array<Layout>): Array<Layout> {
+    const element = layout.find(entry => entry.i === elementIndex);
+    const siblings = this.layoutYSiblingMap[elementIndex];
 
-    for (const key of keys) {
-      const element = nextLayout.find(entry => entry.i === key);
-
-      if (!element || element.static) {
-        continue;
-      }
-
-      nextLayout = this.mapElementSiblingPositions(element, nextLayout);
+    if (!element || !siblings || !siblings.length) {
+      return layout;
     }
 
-    return nextLayout;
+    return this.mapSiblingPositions(element, siblings, layout);
   }
 
-  private mapElementSiblingPositions(element: Layout, layout: Array<Layout>, forceY?: number): Array<Layout> {
+  /**
+   * Sifts through siblings recursively to update the layout with correct layout positions.
+   * 
+   * @param element  Element that serves as a reference point which other elements should follow
+   * @param siblings Siblings of the element
+   * @param layout   Layout upon which the action takes place
+   */
+  private mapSiblingPositions(element: Layout, siblings: Array<string>, layout: Array<Layout>): Array<Layout> {
     let nextLayout = [...layout];
-    const siblings = this.layoutYSiblingMap[element.i];
 
     for (let i = 0, ii = nextLayout.length; i < ii; i++) {
-      const entry = nextLayout[i];
-      const isSibling = siblings.includes(entry.i);
+      // eslint-disable-next-line
+      const sibling = siblings.find(entry => entry === nextLayout[i].i);
 
-      if (!isSibling) {
+      if (!sibling) {
         continue;
       }
 
-      // If the element is hidden we adjust its siblings instead to account for new positions related to itself.
-      // That's because all the siblings bellow the hidden sibling should adhere to the current element's position.
-      if (entry.static) {
-        const mappedLayout = this.mapElementSiblingPositions(entry, nextLayout, forceY !== void 0 ? forceY : element.y + element.h);
+      /**
+       * This case denotes that the sibling is hidden.
+       * In this case we pass the sibling's siblings recursively with the current element being as its
+       * reference point which the other siblings should follow.
+       */
+      if (nextLayout[i].static) {
+        // Sibling's siblings
+        const deepSiblings = this.layoutYSiblingMap[sibling];
 
-        nextLayout = nextLayout.map(nEntry => {
-          const mappedElement = mappedLayout.find(mappedEntry => mappedEntry.i === nEntry.i);
+        if (!deepSiblings || !deepSiblings.length) {
+          continue;
+        }
 
-          if (!mappedElement) {
-            return nEntry;
+        const mappedDeepSiblings = this.mapSiblingPositions(element, deepSiblings, layout);
+
+        for (const mappedSibling of mappedDeepSiblings) {
+          // If it's not the adjust sibling we just move along
+          if (!deepSiblings.includes(mappedSibling.i)) {
+            continue;
           }
 
-          return mappedElement;
-        });
+          const index = nextLayout.findIndex(entry => entry.i === mappedSibling.i);
+
+          // Saftey just in case, could be a bit over the top, but otherwise TypeScript will scream bloody murder at you
+          if (index === -1) {
+            continue;
+          }
+
+          // Assigned the newly mapped sibling to the current layout
+          nextLayout[index] = mappedSibling;
+        }
       }
 
-      // entry.y !== element.y + element.h
-      if (forceY === void 0) {
-        if (element.i === '7' || element.i === '6') {
-          console.log('Pushing down:', entry.i, 'Y:', element.y + element.h, 'Parent:', element);
-        }
+      if (element.y + element.h > nextLayout[i].y) {
+        // Push the sibling down bellow the reference element
         nextLayout[i] = {
-          ...entry,
+          ...nextLayout[i],
           y: element.y + element.h,
         };
       }
+    }
 
-      if (forceY !== void 0 && forceY !== nextLayout[i].y) {
-        if (element.i === '7' || element.i === '6') {
-          console.log('Forcing:', entry.i, 'Y:', forceY, 'Parent:', element);
-        }
-        nextLayout[i] = {
-          ...entry,
-          y: forceY,
-        };
+    // Now update sibling's siblings
+    for (const sibling of siblings) {
+      const element = nextLayout.find(entry => entry.i === sibling);
+      const deepSiblings = this.layoutYSiblingMap[sibling];
+
+      if (!element || !deepSiblings || !deepSiblings.length) {
+        continue;
       }
+
+      nextLayout = this.mapSiblingPositions(element, deepSiblings, nextLayout);
     }
 
     return nextLayout;
