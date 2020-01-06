@@ -170,7 +170,7 @@ export default class App extends React.PureComponent<{}, IState> {
 
       nextLayout = this.mapElementSiblingPositions(element, nextLayout);
     }
-    console.log('Mapped new layout:', JSON.parse(JSON.stringify(nextLayout)));
+
     return nextLayout;
   }
 
