@@ -26,8 +26,9 @@ export function intersectsXAxis(x0: number, x1: number, x2: number, x3: number):
 export function findBottomSiblings(element: Layout, elements: Array<Layout>): Array<IBottomSiblings> {
   const x0 = element.x;
   const x1 = element.x + element.w;
-  // ? -1 : 1
-  const sorted = elements.sort((a, b) => {
+  const sorted = [...elements];
+
+  sorted.sort((a, b) => {
     switch (true) {
       case a.y > b.y:
         return 1;
@@ -37,6 +38,7 @@ export function findBottomSiblings(element: Layout, elements: Array<Layout>): Ar
         return 0;
     }
   });
+
   const siblings = sorted.filter((entry, index, arr) => {
     const x2 = entry.x;
     const x3 = entry.x + entry.w;
@@ -47,11 +49,6 @@ export function findBottomSiblings(element: Layout, elements: Array<Layout>): Ar
     // Meaning there's an empty space between the elements but potentially they could touch
     if (!intersects) {
       for (let i = index - 1; i > 0; i--) {
-        // It is touching another element, so we ignore it.
-        if (arr[i].y + arr[i].h === entry.y && intersectsXAxis(x0, x1, arr[i].x, arr[i].x + arr[i].w)) {
-          return false;
-        }
-
         // We reached the current element that we are checking against
         // Meaning we have an empty space between the reference element and the current element
         // We consider as if they were touching. This accounts for any X-axis siblings making the elements ignore each because of an empty space.
@@ -59,9 +56,14 @@ export function findBottomSiblings(element: Layout, elements: Array<Layout>): Ar
         if (arr[i].i === element.i && intersectsXAxis(x0, x1, x2, x3)) {
           return true;
         }
+
+        // It is touching another element, so we ignore it.
+        if (arr[i].y + arr[i].h === entry.y && intersectsXAxis(x2, x3, arr[i].x, arr[i].x + arr[i].w)) {
+          return false;
+        }
       }
 
-      return intersects;
+      return false;
     }
 
     return intersects;

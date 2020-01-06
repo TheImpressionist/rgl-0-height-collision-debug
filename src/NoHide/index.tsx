@@ -40,6 +40,7 @@ export default class App extends React.PureComponent<{}, IState> {
   private setLayout = (layout: Array<Layout>, source: LayoutUpdateSource): void => {
     if (source === LayoutUpdateSource.Editor) {
       this.buildLayoutYSiblingMap(layout);
+      console.log('Built map:', this.layoutYSiblingMap);
     }
 
     this.setState((state: IState) => {

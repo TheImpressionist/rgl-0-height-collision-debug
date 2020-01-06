@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/rgl-0-height-collision-debug/precache-manifest.46148836ccf95201fd66c099bbe52e34.js"
+  "/rgl-0-height-collision-debug/precache-manifest.7f8278c0cfbca8d7d1f3455b71450963.js"
 );
 
 self.addEventListener('message', (event) => {
