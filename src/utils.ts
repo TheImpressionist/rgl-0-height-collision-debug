@@ -37,25 +37,35 @@ export function findBottomSiblings(element: Layout, elements: Array<Layout>): Ar
         return 0;
     }
   });
-  const siblings = sorted.filter(entry => {
+  const siblings = sorted.filter((entry, index, arr) => {
     const x2 = entry.x;
     const x3 = entry.x + entry.w;
     const h = element.h === 0 && element.maxH !== void 0 ? element.maxH : element.h;
-    return element.i !== entry.i && element.y + h === entry.y && intersectsXAxis(x0, x1, x2, x3);
+    const intersects = element.i !== entry.i && element.y + h === entry.y && intersectsXAxis(x0, x1, x2, x3);
+
+    // Backwards lookup to see if the element is above it but not touching
+    // Meaning there's an empty space between the elements but potentially they could touch
+    if (!intersects) {
+      for (let i = index - 1; i > 0; i--) {
+        // It is touching another element, so we ignore it.
+        if (arr[i].y + arr[i].h === entry.y && intersectsXAxis(x0, x1, arr[i].x, arr[i].x + arr[i].w)) {
+          return false;
+        }
+
+        // We reached the current element that we are checking against
+        // Meaning we have an empty space between the reference element and the current element
+        // We consider as if they were touching. This accounts for any X-axis siblings making the elements ignore each because of an empty space.
+        // Long distance relationship, basically.
+        if (arr[i].i === element.i && intersectsXAxis(x0, x1, x2, x3)) {
+          return true;
+        }
+      }
+
+      return intersects;
+    }
+
+    return intersects;
   });
-
-  // If no bottom siblings, it should instead look for closest bottom sibling that interacts along X axis
-  // if (!siblings.length) {
-  //   // Find all the other ones that are potentially bellow it
-  //   // Filter them out with only the first ones that it might come into contact with remaining in the list
-  //   // Only first X-axis occurences needed
-  //   return sorted.filter(entry => {
-      // const x2 = entry.x;
-      // const x3 = entry.x + entry.w;
-
-  //     return entry.i !== element.i && entry.y >= element.y + element.h && intersectsXAxis(x0, x1, x2, x3);
-  //   });
-  // }
 
   /**
    * NOTE:
@@ -83,33 +93,14 @@ export function findBottomSiblings(element: Layout, elements: Array<Layout>): Ar
       }
 
       return entry.i !== element.i && entry.y === firstFoundSibling.y && intersectsXAxis(x0, x1, x2, x3);
-    })
+    });
   }
 
   return siblings.map(entry => ({
     i: entry.i,
     x: entry.x,
     y: entry.y,
-  }))
-
-
-  // return elements
-  //   .filter(entry => {
-  //     const x0 = entry.x;
-  //     const x1 = entry.x + entry.w;
-  //     const h = element.h === 0 && element.maxH !== void 0 ? element.maxH : element.h;
-  //     return element.i !== entry.i && element.y + h === entry.y && (
-  //       (x3 >= x0 && x3 <= x1) ||
-  //       (x2 >= x0 && x2 <= x1) ||
-  //       (x0 >= x2 && x0 <= x3 && x1 >= x2 && x1 <= x3) ||
-  //       (x2 >= x0 && x2 <= x1 && x3 >= x0 && x3 <= x1)
-  //     );
-  //   })
-  //   .map(entry => ({
-  //     i: entry.i,
-  //     x: entry.x,
-  //     y: entry.y,
-  //   }));
+  }));
 }
 
 

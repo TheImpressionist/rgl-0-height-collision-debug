@@ -11,15 +11,11 @@ import 'react-grid-layout/css/styles.css';
 import { LayoutUpdateSource } from './Enums';
 
 
-export interface IHiddenElement {
-  i: string;
-  bottomSiblings: Array<string>;
-}
 
 
 interface IState {
   layout: Array<Layout>;
-  hiddenElements: Array<IHiddenElement>;
+  hiddenElements: Array<string>;
 }
 
 
@@ -55,19 +51,10 @@ export default class App extends React.PureComponent<{}, IState> {
     });
   }
 
-  private buildHiddenElementState(layout: Array<Layout>): Array<IHiddenElement> {
-    const hiddenElements: Array<IHiddenElement> = [];
-
-    for (const element of layout) {
-      if (element.maxH !== void 0) {
-        hiddenElements.push({
-          i: element.i,
-          bottomSiblings: findBottomSiblings(element, layout).map(entry => entry.i),
-        });
-      }
-    }
-
-    return hiddenElements
+  private buildHiddenElementState(layout: Array<Layout>): Array<string> {
+    return layout
+      .filter(entry => entry.maxH !== void 0)
+      .map(entry => entry.i);
   }
 
   private buildLayoutYSiblingMap(layout: Array<Layout>): void {
@@ -114,16 +101,13 @@ export default class App extends React.PureComponent<{}, IState> {
               return entry;
           }
         }),
-        hiddenElements: !element ? state.hiddenElements : [...state.hiddenElements, {
-          i: element.i,
-          bottomSiblings: findBottomSiblings(element, state.layout).map(entry => entry.i),
-        }],
+        hiddenElements: !element ? state.hiddenElements : [...state.hiddenElements, element.i],
       };
     });
   }
 
   private showElement(index: string): void {
-    const hiddenElement = this.state.hiddenElements.find(entry => entry.i === index);
+    const hiddenElement = this.state.hiddenElements.find(entry => entry === index);
 
     if (!hiddenElement) {
       return;
@@ -150,7 +134,7 @@ export default class App extends React.PureComponent<{}, IState> {
       return {
         ...state,
         layout: this.normalizePositions(index, nextLayout),
-        hiddenElements: state.hiddenElements.filter(entry => entry.i !== hiddenElement.i),
+        hiddenElements: state.hiddenElements.filter(entry => entry !== hiddenElement),
       };
     });
   }
