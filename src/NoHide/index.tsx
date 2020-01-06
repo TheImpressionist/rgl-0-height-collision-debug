@@ -74,8 +74,6 @@ export default class App extends React.PureComponent<{}, IState> {
     for (const element of layout) {
       this.layoutYSiblingMap[element.i] = findBottomSiblings(element, layout).map(entry => entry.i);
     }
-
-    console.log('Built Y Sibling map:', this.layoutYSiblingMap);
   }
 
   private toggleElement = (index: string): void => {
@@ -154,7 +152,7 @@ export default class App extends React.PureComponent<{}, IState> {
         layout: this.normalizePositions(nextLayout),
         hiddenElements: state.hiddenElements.filter(entry => entry.i !== hiddenElement.i),
       };
-    }, () => console.log('Next state:', this.state));
+    });
   }
 
   private normalizePositions(layout: Array<Layout>): Array<Layout> {
@@ -204,13 +202,19 @@ export default class App extends React.PureComponent<{}, IState> {
 
       // entry.y !== element.y + element.h
       if (forceY === void 0) {
+        if (element.i === '7' || element.i === '6') {
+          console.log('Pushing down:', entry.i, 'Y:', element.y + element.h, 'Parent:', element);
+        }
         nextLayout[i] = {
           ...entry,
           y: element.y + element.h,
         };
       }
 
-      if (forceY !== void 0 && forceY >= nextLayout[i].y) {
+      if (forceY !== void 0 && forceY !== nextLayout[i].y) {
+        if (element.i === '7' || element.i === '6') {
+          console.log('Forcing:', entry.i, 'Y:', forceY, 'Parent:', element);
+        }
         nextLayout[i] = {
           ...entry,
           y: forceY,
