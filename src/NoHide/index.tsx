@@ -180,7 +180,7 @@ export default class App extends React.PureComponent<{}, IState> {
        * In this case we pass the sibling's siblings recursively with the current element being as its
        * reference point which the other siblings should follow.
        */
-      if (nextLayout[i].static) {
+      if (nextLayout[i].hidden) {
         // Sibling's siblings
         const deepSiblings = this.layoutYSiblingMap[sibling];
 
