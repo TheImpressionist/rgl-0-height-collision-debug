@@ -81,14 +81,10 @@ export default class EditorView extends React.PureComponent<IProps, IState> {
 
   private mapItems(): Array<React.ReactNode> {
     return this.state.layout.map(entry => (
-      <div key={entry.i} className={`item ${this.isHidden(entry) ? 'hidden' : ''}`}>
+      <div key={entry.i} className={`item ${entry.hidden ? 'hidden' : ''}`}>
         {entry.i}
       </div>
     ));
-  }
-
-  private isHidden(element: Layout): boolean {
-    return element.maxH !== void 0;
   }
 
   private toggleSingleElement = (evt: React.MouseEvent<HTMLButtonElement>): void => {
@@ -104,11 +100,18 @@ export default class EditorView extends React.PureComponent<IProps, IState> {
         layout: state.layout.map(entry => {
           switch (entry.i) {
             case index:
-              return {
+              const nextEntry = {
                 ...entry,
-                maxW: entry.maxW !== void 0 ? void 0 : entry.w,
-                maxH: entry.maxH !== void 0 ? void 0 : entry.h,
+                hidden: !entry.hidden,
               };
+              if (entry.isDraggable) {
+                delete nextEntry.isDraggable;
+                delete nextEntry.isResizable;
+              } else {
+                nextEntry.isDraggable = true;
+                nextEntry.isResizable = true;
+              }
+              return nextEntry;
             default:
               return entry;
           }
