@@ -1349,13 +1349,6 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-grid-layout@^0.17.0":
-  version "0.17.0"
-  resolved "https://registry.yarnpkg.com/@types/react-grid-layout/-/react-grid-layout-0.17.0.tgz#8c44688421d73edc1df0288aec8a24334c6566de"
-  integrity sha512-97GPV3rMLmptO8c0ectllxM2qDMw/PsyH3icoSk4e3kqj86ZgjXxTtY2U5B2JZSO1PR/Ou/7IRs3gOeb8cSlEA==
-  dependencies:
-    "@types/react" "*"
-
 "@types/react@*", "@types/react@^16.9.0":
   version "16.9.16"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-16.9.16.tgz#4f12515707148b1f53a8eaa4341dae5dfefb066d"
@@ -6330,9 +6323,9 @@ memory-fs@^0.5.0:
     readable-stream "^2.0.1"
 
 merge-deep@^3.0.2:
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/merge-deep/-/merge-deep-3.0.2.tgz#f39fa100a4f1bd34ff29f7d2bf4508fbb8d83ad2"
-  integrity sha512-T7qC8kg4Zoti1cFd8Cr0M+qaZfOwjlPDEdZIIPPB2JZctjaPM4fX+i7HOId69tAti2fvO6X5ldfYUONDODsrkA==
+  version "3.0.3"
+  resolved "https://registry.yarnpkg.com/merge-deep/-/merge-deep-3.0.3.tgz#1a2b2ae926da8b2ae93a0ac15d90cd1922766003"
+  integrity sha512-qtmzAS6t6grwEkNrunqTBdn0qKwFgNWvlxUbAV8es9M7Ot1EbyApytCnvE0jALPa46ZpKDUo527kKiaWplmlFA==
   dependencies:
     arr-union "^3.1.0"
     clone-deep "^0.2.4"
@@ -8398,10 +8391,10 @@ react-error-overlay@^6.0.4:
   resolved "https://registry.yarnpkg.com/react-error-overlay/-/react-error-overlay-6.0.4.tgz#0d165d6d27488e660bc08e57bdabaad741366f7a"
   integrity sha512-ueZzLmHltszTshDMwyfELDq8zOA803wQ1ZuzCccXa1m57k1PxSHfflPD5W9YIiTXLs0JTLzoj6o1LuM5N6zzNA==
 
-react-grid-layout@^0.17.1:
-  version "0.17.1"
-  resolved "https://registry.yarnpkg.com/react-grid-layout/-/react-grid-layout-0.17.1.tgz#0b75c72e5b7d7085f0f0054e160b31298971c5e2"
-  integrity sha512-L+wHFevK+klKvoAHuHn4Q5qHtrW+4zCj0F3QnpR7wZbkZPmrdaWC7cztFLXwINq6WnOWGE22BCTCDCHJi7dVDw==
+react-grid-layout@TheImpressionist/react-grid-layout:
+  version "0.17.2"
+  uid "1935e8fcf4eaccc507592acf5e1e2cfa62ac4a36"
+  resolved "https://codeload.github.com/TheImpressionist/react-grid-layout/tar.gz/1935e8fcf4eaccc507592acf5e1e2cfa62ac4a36"
   dependencies:
     classnames "2.x"
     lodash.isequal "^4.0.0"
